@@ -8,7 +8,7 @@ const { iconPlus } = icons
   <nav>
     <h3>Учетные записи</h3>
 
-    <button type="button">
+    <button type="button" v-on:click="$emit('add')">
       <icon-plus />
     </button>
   </nav>

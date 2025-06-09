@@ -1,15 +1,45 @@
 <script setup lang="ts">
 import { components, icons } from '@/components'
+import { useStore } from './provider'
+import type { AccountType, RecordType } from './types'
+import { computed, type ComputedRef } from 'vue'
 
 // Деструктуризация компонентов и иконок
 const { componentNavbar, componentHint } = components
 const { iconTrash, iconEyeSlash } = icons
+
+const store = useStore()
+
+/**
+ * Реактивная ссылка на данные аккаунтов из хранилища.
+ * @type {ComputedRef<AccountType[]>}
+ */
+const accountData: ComputedRef<AccountType[]> = computed(() => store.accountData)
+
+/**
+ * Реактивная ссылка на доступные типы записей из хранилища.
+ * @type {ComputedRef<RecordType[]>}
+ */
+const recordOptions: ComputedRef<RecordType[]> = computed(() => store.recordOptions)
+
+/**
+ * Добавляет новую запись аккаунта через хранилище.
+ * @returns {void}
+ */
+const addRecord = (): void => store.addRecord()
+
+/**
+ * Удаляет запись аккаунта по указанному индексу через хранилище.
+ * @param {number} index - Индекс удаляемой записи
+ * @returns {void}
+ */
+const removeRecord = (index: number): void => store.removeRecord(index)
 </script>
 
 <template>
   <main>
     <header>
-      <component-navbar />
+      <component-navbar v-on:add="addRecord()" />
       <component-hint />
     </header>
 
@@ -26,29 +56,34 @@ const { iconTrash, iconEyeSlash } = icons
         </thead>
 
         <tbody>
-          <tr>
+          <tr v-if="accountData.length === 0">
+            <td colspan="5">Нет записей</td>
+          </tr>
+
+          <tr v-for="(account, index) in accountData" v-bind:key="index">
             <td>
-              <input type="text" />
+              <input type="text" v-model="account.label" />
             </td>
 
             <td>
-              <select>
-                <option>Локальная</option>
-                <option>LDAP</option>
+              <select v-model="account.type">
+                <option v-for="option in recordOptions" :key="option" :value="option">
+                  {{ option }}
+                </option>
               </select>
             </td>
 
             <td>
-              <input type="text" />
+              <input type="text" v-model="account.login" />
             </td>
 
             <td>
-              <input type="password" />
+              <input type="password" v-model="account.password" />
               <icon-eye-slash />
             </td>
 
             <td>
-              <button type="button">
+              <button type="button" v-on:click="removeRecord(index)">
                 <icon-trash />
               </button>
             </td>
