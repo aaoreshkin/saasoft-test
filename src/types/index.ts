@@ -5,6 +5,17 @@
 export type RecordType = 'Локальная' | 'LDAP'
 
 /**
+ * Поля аккаунта, доступные для валидации.
+ */
+export type AccountField = 'label' | 'login' | 'password' | 'type'
+
+/**
+ * Объект ошибок валидации полей аккаунта.
+ * Ключи - названия полей, значения - флаги наличия ошибки (true - есть ошибка).
+ */
+export type AccountErrors = Partial<Record<AccountField, boolean>>
+
+/**
  * Интерфейс для метки аккаунта.
  */
 export interface LabelType {
@@ -18,6 +29,11 @@ export interface LabelType {
  * Интерфейс для объекта аккаунта.
  */
 export interface AccountType {
+  /**
+   * Исходная строка с метками до обработки.
+   */
+  labelRaw: string
+
   /**
    * Обработанный массив меток.
    */
@@ -37,4 +53,9 @@ export interface AccountType {
    * Пароль пользователя. Null для LDAP-аккаунтов.
    */
   password: string | null
+
+  /**
+   * Объект с ошибками валидации полей.
+   */
+  errors: AccountErrors
 }

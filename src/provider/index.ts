@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { createStorage, type StorageType } from '@/composables/storage'
-import type { AccountType, RecordType } from '@/types'
+import type { AccountType, LabelType, RecordType } from '@/types'
 import { ref } from 'vue'
 
 /**
@@ -17,7 +17,7 @@ export const useStore = defineStore('app', () => {
    * Инициализируется пустым массивом, если данные не найдены.
    * Используется для хранения информации о каждом аккаунте.
    */
-  const accountData = ref<AccountType[]>([])
+  const accountData = ref<AccountType[]>(storage.read('accountData') || [])
 
   /**
    * Массив доступных типов записей аккаунта.
@@ -33,10 +33,12 @@ export const useStore = defineStore('app', () => {
    */
   const addRecord = (): void => {
     accountData.value.push({
+      labelRaw: '',
       label: [],
       type: 'Локальная',
       login: '',
       password: null,
+      errors: {},
     })
   }
 
@@ -63,5 +65,20 @@ export const useStore = defineStore('app', () => {
     storage.write('accountData', accountData.value)
   }
 
-  return { accountData, recordOptions, addRecord, removeRecord, saveRecord }
+  /**
+   * Преобразует строку с метками, разделенными точкой с запятой, в массив объектов меток.
+   * Удаляет пробелы по краям каждой метки и игнорирует пустые метки.
+   *
+   * @param {string} raw - Исходная строка с метками, разделенными точкой с запятой
+   * @returns {LabelType[]} Массив объектов меток
+   */
+  const parseLabel = (raw: string): LabelType[] => {
+    return raw.split(';').reduce<LabelType[]>((acc, s) => {
+      const text = s.trim()
+      if (text) acc.push({ text })
+      return acc
+    }, [])
+  }
+
+  return { accountData, recordOptions, addRecord, removeRecord, saveRecord, parseLabel }
 })

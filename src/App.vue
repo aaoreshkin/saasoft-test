@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { components, icons } from '@/components'
+import type { AccountField, AccountType, RecordType } from './types'
 import { useStore } from './provider'
-import type { AccountType, RecordType } from './types'
 import { computed, ref, type ComputedRef, type Ref } from 'vue'
 
 // Деструктуризация компонентов и иконок
@@ -42,6 +42,13 @@ const removeRecord = (index: number): void => store.removeRecord(index)
 const saveRecord = (): void => store.saveRecord()
 
 /**
+ * Преобразует строку с метками в структурированный формат через хранилище.
+ * @param {string} label - Исходная строка с метками
+ * @returns {ReturnType<typeof store.parseLabel>} Обработанные метки
+ */
+const parseLabel = (label: string): ReturnType<typeof store.parseLabel> => store.parseLabel(label)
+
+/**
  * Обрабатывает изменение типа записи аккаунта.
  * Устанавливает новый тип и обновляет поле пароля в зависимости от типа.
  * Для LDAP устанавливает пароль в null, для других типов - пустую строку.
@@ -60,6 +67,9 @@ const handleTypeChange = (index: number, type: RecordType): void => {
   } else {
     account.password = ''
   }
+
+  validateField(account, 'login')
+  validateField(account, 'password')
 }
 
 /**
@@ -76,6 +86,42 @@ const passwordVisibility: Ref<boolean[]> = ref<boolean[]>([])
 const togglePasswordVisibility = (index: number): void => {
   passwordVisibility.value[index] = !passwordVisibility.value[index]
 }
+
+/**
+ * Объект валидаторов для проверки полей аккаунта.
+ * Каждый валидатор принимает объект аккаунта и возвращает булево значение.
+ *
+ * @type {Record<AccountField, (account: AccountType) => boolean>}
+ */
+const validator: Record<AccountField, (account: AccountType) => boolean> = {
+  label: (account) => account.labelRaw.length <= 50,
+  login: (account) => !!account.login && account.login.length <= 100,
+  password: (account) =>
+    account.type === 'Локальная' ? !!account.password && account.password.length <= 100 : true,
+  type: () => true,
+}
+
+/**
+ * Проверяет валидность указанного поля аккаунта и обновляет состояние ошибок.
+ * Если поле валидно, сохраняет запись. Для поля 'label' дополнительно
+ * обрабатывает метку через parseLabel.
+ *
+ * @param {AccountType} account - Объект аккаунта для валидации
+ * @param {AccountField} field - Поле аккаунта, которое нужно проверить
+ * @returns {void}
+ */
+const validateField = (account: AccountType, field: AccountField): void => {
+  const isValid = validator[field](account)
+  account.errors[field] = !isValid
+
+  if (field === 'label' && isValid) {
+    account.label = parseLabel(account.labelRaw)
+  }
+
+  if (isValid) {
+    saveRecord()
+  }
+}
 </script>
 
 <template>
@@ -84,10 +130,6 @@ const togglePasswordVisibility = (index: number): void => {
       <component-navbar v-on:add="addRecord()" />
       <component-hint />
     </header>
-
-    <pre>
-        {{ accountData }}
-    </pre>
 
     <section>
       <table>
@@ -108,11 +150,20 @@ const togglePasswordVisibility = (index: number): void => {
 
           <tr v-for="(account, index) in accountData" v-bind:key="index">
             <td>
-              <input type="text" v-model="account.label" />
+              <input
+                type="text"
+                v-bind:class="{ error: account.errors.label }"
+                v-model="account.labelRaw"
+                v-on:blur="validateField(account, 'label')"
+              />
             </td>
 
             <td>
-              <select v-model="account.type" v-on:change="handleTypeChange(index, account.type)">
+              <select
+                v-model="account.type"
+                v-bind:class="{ error: account.errors.type }"
+                v-on:change="handleTypeChange(index, account.type)"
+              >
                 <option v-for="option in recordOptions" :key="option" :value="option">
                   {{ option }}
                 </option>
@@ -120,13 +171,20 @@ const togglePasswordVisibility = (index: number): void => {
             </td>
 
             <td v-bind:colspan="account.type === 'LDAP' ? 2 : 1">
-              <input type="text" v-model="account.login" />
+              <input
+                type="text"
+                v-bind:class="{ error: account.errors.login }"
+                v-model="account.login"
+                v-on:blur="validateField(account, 'login')"
+              />
             </td>
 
             <td v-if="account.type !== 'LDAP'">
               <input
                 v-bind:type="passwordVisibility[index] ? 'text' : 'password'"
+                v-bind:class="{ error: account.errors.password }"
                 v-model="account.password"
+                v-on:blur="validateField(account, 'password')"
               />
               <icon-eye-slash v-on:click="togglePasswordVisibility(index)" />
             </td>
@@ -233,5 +291,9 @@ table {
       }
     }
   }
+}
+
+.error {
+  border-color: tomato;
 }
 </style>
