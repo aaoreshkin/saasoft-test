@@ -4,9 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --mode development",
+    "deploy": "vite build --mode production && rsync --archive --compress --delete -e 'ssh -p 22' ./dist/* $(grep SSH ./.env.production.local | cut -d '=' -f2)",
     "build": "run-p type-check \"build-only {@}\" --",
     "preview": "vite preview",
+    "prod": "vite --mode production",
     "build-only": "vite build",
     "type-check": "vue-tsc --build",
     "format": "prettier --write src/"
@@ -22,6 +24,7 @@
     "@vue/tsconfig": "^0.7.0",
     "npm-run-all2": "^7.0.2",
     "prettier": "3.5.3",
+    "sass": "^1.89.2",
     "typescript": "~5.8.0",
     "vite": "^6.2.4",
     "vite-plugin-vue-devtools": "^7.7.2",
