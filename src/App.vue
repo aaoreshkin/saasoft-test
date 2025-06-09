@@ -34,6 +34,12 @@ const addRecord = (): void => store.addRecord()
  * @returns {void}
  */
 const removeRecord = (index: number): void => store.removeRecord(index)
+
+/**
+ * Сохраняет текущее состояние данных аккаунтов в хранилище.
+ * @returns {void}
+ */
+const saveRecord = (): void => store.saveRecord()
 </script>
 
 <template>
@@ -42,6 +48,8 @@ const removeRecord = (index: number): void => store.removeRecord(index)
       <component-navbar v-on:add="addRecord()" />
       <component-hint />
     </header>
+
+    <button type="button" v-on:click="saveRecord()">Сохранить</button>
 
     <section>
       <table>

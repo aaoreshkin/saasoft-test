@@ -1,6 +1,15 @@
 import { defineStore } from 'pinia'
+import { createStorage, type StorageType } from '@/composables/storage'
 import type { AccountType, RecordType } from '@/types'
 import { ref } from 'vue'
+
+/**
+ * Хранилище данных, созданное на основе sessionStorage.
+ * Используется для сохранения и загрузки данных аккаунтов между сессиями.
+ *
+ * @type {StorageType}
+ */
+const storage: StorageType = createStorage(sessionStorage)
 
 export const useStore = defineStore('app', () => {
   /**
@@ -40,7 +49,19 @@ export const useStore = defineStore('app', () => {
    */
   const removeRecord = (index: number): void => {
     accountData.value.splice(index, 1)
+
+    saveRecord()
   }
 
-  return { accountData, recordOptions, addRecord, removeRecord }
+  /**
+   * Сохраняет текущее состояние данных аккаунтов в хранилище.
+   * Использует метод write из объекта storage для записи данных с ключом 'accountData'.
+   *
+   * @returns {void}
+   */
+  const saveRecord = (): void => {
+    storage.write('accountData', accountData.value)
+  }
+
+  return { accountData, recordOptions, addRecord, removeRecord, saveRecord }
 })
