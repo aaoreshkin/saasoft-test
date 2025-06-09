@@ -1,11 +1,19 @@
 <script setup lang="ts">
-// do smth
+import { components } from '@/components'
+
+// Деструктуризация компонентов
+const { componentNavbar, componentHint } = components
 </script>
 
 <template>
-
+  <main>
+    <header>
+      <component-navbar />
+      <component-hint />
+    </header>
+  </main>
 </template>
 
-<style scoped lang="scss">
+<style lang="scss">
 // & else
 </style>
