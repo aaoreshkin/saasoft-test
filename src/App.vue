@@ -2,7 +2,7 @@
 import { components, icons } from '@/components'
 import { useStore } from './provider'
 import type { AccountType, RecordType } from './types'
-import { computed, type ComputedRef } from 'vue'
+import { computed, ref, type ComputedRef, type Ref } from 'vue'
 
 // Деструктуризация компонентов и иконок
 const { componentNavbar, componentHint } = components
@@ -40,6 +40,42 @@ const removeRecord = (index: number): void => store.removeRecord(index)
  * @returns {void}
  */
 const saveRecord = (): void => store.saveRecord()
+
+/**
+ * Обрабатывает изменение типа записи аккаунта.
+ * Устанавливает новый тип и обновляет поле пароля в зависимости от типа.
+ * Для LDAP устанавливает пароль в null, для других типов - пустую строку.
+ * После изменения запускает валидацию полей login и password.
+ *
+ * @param {number} index - Индекс аккаунта в массиве accountData
+ * @param {RecordType} type - Новый тип записи
+ * @returns {void}
+ */
+const handleTypeChange = (index: number, type: RecordType): void => {
+  const account = accountData.value[index]
+  account.type = type
+
+  if (type === 'LDAP') {
+    account.password = null
+  } else {
+    account.password = ''
+  }
+}
+
+/**
+ * Реактивный массив для хранения состояний видимости паролей.
+ * @type {Ref<boolean[]>}
+ */
+const passwordVisibility: Ref<boolean[]> = ref<boolean[]>([])
+
+/**
+ * Переключает видимость пароля для аккаунта с указанным индексом.
+ * @param {number} index - Индекс аккаунта в массиве
+ * @returns {void}
+ */
+const togglePasswordVisibility = (index: number): void => {
+  passwordVisibility.value[index] = !passwordVisibility.value[index]
+}
 </script>
 
 <template>
@@ -49,7 +85,9 @@ const saveRecord = (): void => store.saveRecord()
       <component-hint />
     </header>
 
-    <button type="button" v-on:click="saveRecord()">Сохранить</button>
+    <pre>
+        {{ accountData }}
+    </pre>
 
     <section>
       <table>
@@ -74,20 +112,23 @@ const saveRecord = (): void => store.saveRecord()
             </td>
 
             <td>
-              <select v-model="account.type">
+              <select v-model="account.type" v-on:change="handleTypeChange(index, account.type)">
                 <option v-for="option in recordOptions" :key="option" :value="option">
                   {{ option }}
                 </option>
               </select>
             </td>
 
-            <td>
+            <td v-bind:colspan="account.type === 'LDAP' ? 2 : 1">
               <input type="text" v-model="account.login" />
             </td>
 
-            <td>
-              <input type="password" v-model="account.password" />
-              <icon-eye-slash />
+            <td v-if="account.type !== 'LDAP'">
+              <input
+                v-bind:type="passwordVisibility[index] ? 'text' : 'password'"
+                v-model="account.password"
+              />
+              <icon-eye-slash v-on:click="togglePasswordVisibility(index)" />
             </td>
 
             <td>
